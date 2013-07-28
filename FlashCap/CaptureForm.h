@@ -142,6 +142,7 @@ namespace FlashCap {
 					currentFrame++;
 
 					if (framesToCaptureIndex >= framesToCapture->Length) {
+						timeoutTimer->Enabled = false;
 						this->BeginInvoke(gcnew Action(this, &CaptureForm::StopCapture));
 					}
 				} catch (Exception^ ex) {
@@ -193,24 +194,25 @@ namespace FlashCap {
 			 }
 
 	private: System::Void StopCapture() {
+				 webBrowser->DocumentCompleted -= gcnew System::Windows::Forms::WebBrowserDocumentCompletedEventHandler(this, &CaptureForm::webBrowser_DocumentCompleted);
 				 webBrowser->ObjectForScripting = nullptr;
 				 this->Controls->Remove(webBrowser);
 				 delete [] webBrowser;
 				 webBrowser = nullptr;
+				 timeoutTimer->Tick -= gcnew System::EventHandler(this, &CaptureForm::timeoutTimer_Tick);
+				 timeoutTimer->Enabled = false;
 				 delete timeoutTimer;
 
 				 NextJob();
 			 }
 	private: System::Void timeoutTimer_Tick(System::Object^  sender, System::EventArgs^  e) {
-				 StopCapture();
+				 int timerFileIndex = (int)(((Timer^)sender)->Tag);
+				 if (timerFileIndex == currentFileIndex) {
+					 StopCapture();
+				 }
 			 }
 
 	private: System::Void StartCapture(String^ swfPath) {
-				 timeoutTimer = gcnew Timer();
-				 timeoutTimer->Interval = timeout;
-				 timeoutTimer->Enabled = true;
-				 timeoutTimer->Tick += gcnew System::EventHandler(this, &CaptureForm::timeoutTimer_Tick);
-
 				 String^ jobId = Guid::NewGuid().ToString("D");
 				 array<Byte>^ data = File::ReadAllBytes(swfPath);
 				 if (data[0] == 'C' && data[1] == 'W' && data[2] == 'S')
@@ -369,6 +371,12 @@ namespace FlashCap {
 			     webBrowser->Size = System::Drawing::Size(100, 100);
 			     webBrowser->DocumentCompleted += gcnew System::Windows::Forms::WebBrowserDocumentCompletedEventHandler(this, &CaptureForm::webBrowser_DocumentCompleted);
 			     this->Controls->Add(webBrowser);
+
+				 timeoutTimer = gcnew Timer();
+				 timeoutTimer->Interval = timeout;
+				 timeoutTimer->Enabled = true;
+				 timeoutTimer->Tick += gcnew System::EventHandler(this, &CaptureForm::timeoutTimer_Tick);
+				 timeoutTimer->Tag = currentFileIndex;
 
 				 String^ url = webBaseUrl + jobId + ".html";
 				 this->webBrowser->Url = gcnew System::Uri(url, System::UriKind::Absolute);
