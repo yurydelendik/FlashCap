@@ -60,7 +60,8 @@
       <EntryPointSymbol>main</EntryPointSymbol>
     </Link>
     <PostBuildEvent>
-      <Command>copy App.config "$(TargetPath).config"</Command>
+      <Command>copy App.config "$(TargetPath).config"
+copy wrapper.html "$(TargetDir)wrapper.html"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
